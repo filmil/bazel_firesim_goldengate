@@ -1,0 +1,65 @@
+load("@rules_pkg//pkg:mappings.bzl", "pkg_files")
+load("@rules_pkg//pkg:zip.bzl", "pkg_zip")
+
+# Golden Gate's self-contained jar.
+alias(
+    name = "goldengate",
+    actual = "@firesim//:goldengate",
+)
+
+# The release: a module in itself (firesim_goldengate) holding the jar, which
+# the registry entry points at.
+genrule(
+    name = "release_jar",
+    srcs = ["@firesim//:goldengate_deploy.jar"],
+    outs = ["goldengate-1.22.0.jar"],
+    cmd = "cp $< $@",
+)
+
+pkg_files(
+    name = "release_files",
+    srcs = [
+        ":release_jar",
+        "release/release.BUILD",
+        "release/release.MODULE",
+    ],
+    renames = {
+        "release/release.BUILD": "BUILD.bazel",
+        "release/release.MODULE": "MODULE.bazel",
+    },
+)
+
+pkg_zip(
+    name = "release",
+    srcs = [":release_files"],
+    out = "firesim_goldengate-1.22.0.zip",
+)
+
+# A smoke run: FireSim's GCD example, elaborated, then through Golden Gate for
+# Nitefury II. About a minute and a half.
+genrule(
+    name = "gcd_fir",
+    outs = ["gcd/GCD.fir", "gcd/GCD.anno.json"],
+    cmd = "$(location @firesim//:examples_generator) " +
+          "--target-dir $(RULEDIR)/gcd --name GCD " +
+          "--top-module firesim.midasexamples.GCD " +
+          "--configs firesim.midasexamples.NoConfig > $(RULEDIR)/gcd.log 2>&1 " +
+          "|| { tail -40 $(RULEDIR)/gcd.log >&2; exit 1; }",
+    tools = ["@firesim//:examples_generator"],
+    tags = ["manual"],
+)
+
+genrule(
+    name = "gcd_goldengate",
+    srcs = ["gcd/GCD.fir", "gcd/GCD.anno.json"],
+    outs = ["gg/FireSim-generated.sv", "gg/FireSim-generated.const.h"],
+    cmd = "$(location @firesim//:goldengate) " +
+          "-i $(location gcd/GCD.fir) -td $(RULEDIR)/gg " +
+          "-faf $(location gcd/GCD.anno.json) " +
+          "-ggcp firesim.midasexamples -ggcs DefaultNitefuryConfig " +
+          "--output-filename-base FireSim-generated " +
+          "--allow-unrecognized-annotations --no-dedup > $(RULEDIR)/gg.log 2>&1 " +
+          "|| { tail -40 $(RULEDIR)/gg.log >&2; exit 1; }",
+    tools = ["@firesim//:goldengate"],
+    tags = ["manual"],
+)

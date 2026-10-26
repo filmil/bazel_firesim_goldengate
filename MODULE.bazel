@@ -1,0 +1,116 @@
+module(
+    name = "bazel_firesim_goldengate",
+    version = "1.22.0",
+)
+
+bazel_dep(name = "rules_scala", version = "7.4.0")
+bazel_dep(name = "rules_jvm_external", version = "6.7")
+bazel_dep(name = "rules_java", version = "8.14.0")
+bazel_dep(name = "rules_pkg", version = "1.0.1")
+
+
+# Golden Gate's own world, as FireSim's sim/build.sbt has it: Chisel 3.6.1.
+# FireSim builds on Scala 2.13.10; 2.13.14 is the newest the Chisel 3.6.1
+# plugin is published for.
+scala_config = use_extension("@rules_scala//scala/extensions:config.bzl", "scala_config")
+scala_config.settings(scala_version = "2.13.14")
+scala_deps = use_extension("@rules_scala//scala/extensions:deps.bzl", "scala_deps")
+scala_deps.scala()
+
+# rules_scala 7.4.0 ships 2.13.18; the compiler, library and reflect are
+# pointed at 2.13.14 here, as its version check asks.
+scala_deps.overridden_artifact(
+    name = "io_bazel_rules_scala_scala_compiler",
+    artifact = "org.scala-lang:scala-compiler:2.13.14",
+    sha256 = "17b7e1dd95900420816a3bc2788c8c7358c2a3c42899765a5c463a46bfa569a6",
+    deps = [
+        "@io_bazel_rules_scala_scala_library",
+        "@io_bazel_rules_scala_scala_reflect",
+        "@io_github_java_diff_utils_java_diff_utils",
+        "@org_jline_jline",
+    ],
+)
+scala_deps.overridden_artifact(
+    name = "io_bazel_rules_scala_scala_library",
+    artifact = "org.scala-lang:scala-library:2.13.14",
+    sha256 = "43e0ca1583df1966eaf02f0fbddcfb3784b995dd06bfc907209347758ce4b7e3",
+)
+scala_deps.overridden_artifact(
+    name = "io_bazel_rules_scala_scala_reflect",
+    artifact = "org.scala-lang:scala-reflect:2.13.14",
+    sha256 = "8846baaa8cf43b1b19725ab737abff145ca58d14a4d02e75d71ca8f7ca5f2926",
+    deps = ["@io_bazel_rules_scala_scala_library"],
+)
+
+maven = use_extension("@rules_jvm_external//:extensions.bzl", "maven")
+maven.install(
+    name = "gg_maven",
+    artifacts = [
+        "edu.berkeley.cs:chisel3_2.13:3.6.1",
+        "edu.berkeley.cs:chisel3-plugin_2.13.14:3.6.1",
+        "org.apache.commons:commons-lang3:3.12.0",
+        "org.apache.commons:commons-text:1.9",
+        "org.json4s:json4s-native_2.13:3.6.10",
+        "org.json4s:json4s-jackson_2.13:4.0.5",
+        "com.lihaoyi:sourcecode_2.13:0.3.1",
+        "com.lihaoyi:mainargs_2.13:0.5.0",
+        "org.scala-graph:graph-core_2.13:1.13.5",
+        "org.scala-lang:scala-reflect:2.13.14",
+    ],
+    lock_file = "//:gg_maven_install.json",
+    repositories = ["https://repo1.maven.org/maven2"],
+)
+use_repo(maven, "gg_maven")
+
+http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+http_archive(
+    name = "cde",
+    build_file = "//overlays:cde.BUILD",
+    sha256 = "08e8e8ee01ae1d11c797c18a9edc67a48702b7f888b95ea40996aa89544354e3",
+    strip_prefix = "cde-2bcaeae2b9914bd25497ce3c6fa62dc5ca80e09f",
+    urls = ["https://github.com/chipsalliance/cde/archive/2bcaeae2b9914bd25497ce3c6fa62dc5ca80e09f.tar.gz"],
+)
+
+http_archive(
+    name = "hardfloat",
+    build_file = "//overlays:hardfloat.BUILD",
+    sha256 = "f5ee48179b6c96ba897d395bd927d1c4db38f7ad254e98c01ffb6871fd230adb",
+    strip_prefix = "berkeley-hardfloat-26f00d00c3f3f57480065e02bfcfde3d3b41ec51",
+    urls = ["https://github.com/ucb-bar/berkeley-hardfloat/archive/26f00d00c3f3f57480065e02bfcfde3d3b41ec51.tar.gz"],
+)
+
+http_archive(
+    name = "diplomacy",
+    build_file = "//overlays:diplomacy.BUILD",
+    sha256 = "c8a39c96ce4e942fe11715dd1897b21d87b17546d1e5178b3eac58cd4c6e51bf",
+    strip_prefix = "diplomacy-a042ff6df083624ceba471367d4292c91b43f7e6",
+    urls = ["https://github.com/chipsalliance/diplomacy/archive/a042ff6df083624ceba471367d4292c91b43f7e6.tar.gz"],
+)
+
+http_archive(
+    name = "rocket_chip",
+    build_file = "//overlays:rocket_chip.BUILD",
+    sha256 = "28aee19ef123145afd50bfd9aff0d34143a07e52b7a2a15425317917acf7b484",
+    strip_prefix = "rocket-chip-1b9f43352c7fd6e4e81cb244b422f6c605ffd3df",
+    urls = ["https://github.com/chipsalliance/rocket-chip/archive/1b9f43352c7fd6e4e81cb244b422f6c605ffd3df.tar.gz"],
+)
+
+http_archive(
+    name = "firesim",
+    build_file = "//overlays:firesim.BUILD",
+    sha256 = "7594420f31be6fc3ac71f6df97923df832a6449594c82f3d153d3eb0b0be4120",
+    strip_prefix = "firesim-e1bdea8bb042b900995436ecc3d7c44100eb9da0",
+    urls = ["https://github.com/firesim/firesim/archive/e1bdea8bb042b900995436ecc3d7c44100eb9da0.tar.gz"],
+)
+
+# Chipyard 1.15.0, FireSim 1.22.0's Chipyard: its FireChip bridge interfaces and Golden Gate bridge
+# implementations, which Chipyard's firechip build.mk copies into Golden
+# Gate's sources (TARGET_COPY_TO_MIDAS_SCALA_DIRS).
+http_archive(
+    name = "chipyard",
+    build_file = "//overlays:chipyard.BUILD",
+    sha256 = "ed49bbd7653c32208018f6e4256a80215364dbd7022be828bf280e71b044b5a2",
+    strip_prefix = "chipyard-157dd69e49b9866be2bf8db390ee78bc38cd4438",
+    urls = ["https://github.com/ucb-bar/chipyard/archive/157dd69e49b9866be2bf8db390ee78bc38cd4438.tar.gz"],
+)
