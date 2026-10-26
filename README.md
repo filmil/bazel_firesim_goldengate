@@ -15,8 +15,10 @@ the consumer runs the jar as a tool instead, through
     bazel build //:release             # firesim_goldengate-1.22.0.zip
     bazel build //:gcd_goldengate      # a smoke run: FireSim's GCD example on Nitefury II
 
-The release zip is itself the module: `MODULE.bazel`, a `BUILD.bazel` with
-`@firesim_goldengate//:goldengate`, and the jar.
+The release zip is itself the module `firesim_goldengate`: `MODULE.bazel`, a
+`BUILD.bazel` with `@firesim_goldengate//:goldengate`, and the jar. This
+source repository is a different module (`bazel_firesim_goldengate`) and is
+not meant to be depended on; depend on the release.
 
 Scala is 2.13.14, the newest the Chisel 3.6.1 plugin is published for;
 FireSim's sbt build uses 2.13.10. rules_scala 7.4.0 ships 2.13.18, so the

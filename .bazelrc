@@ -1,5 +1,5 @@
-common --local_resources=cpu=HOST_CPUS*.5
 common --enable_bzlmod
 build --java_runtime_version=remotejdk_21
 build --tool_java_runtime_version=remotejdk_21
 build --incompatible_enable_cc_toolchain_resolution
+try-import %workspace%/.bazelrc.user

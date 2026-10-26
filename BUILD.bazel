@@ -1,7 +1,10 @@
+load("@rules_java//java:defs.bzl", "java_binary", "java_import")
+
 load("@rules_pkg//pkg:mappings.bzl", "pkg_files")
 load("@rules_pkg//pkg:zip.bzl", "pkg_zip")
 
-# Golden Gate's self-contained jar.
+# Golden Gate as a scala_binary; its `_deploy.jar` is the self-contained jar
+# the release ships.
 alias(
     name = "goldengate",
     actual = "@firesim//:goldengate",
@@ -35,8 +38,22 @@ pkg_zip(
     out = "firesim_goldengate-1.22.0.zip",
 )
 
-# A smoke run: FireSim's GCD example, elaborated, then through Golden Gate for
-# Nitefury II. About a minute and a half.
+# The released jar, run as consumers run it: the smoke run below uses this,
+# so it tests the packaged jar and release.BUILD's flags.
+java_import(
+    name = "release_goldengate_jar",
+    jars = [":release_jar"],
+)
+
+java_binary(
+    name = "release_goldengate",
+    main_class = "midas.stage.GoldenGateMain",
+    jvm_flags = ["-Xss8M"],
+    runtime_deps = [":release_goldengate_jar"],
+)
+
+# A smoke run: FireSim's GCD example, elaborated, then through the released
+# Golden Gate for Nitefury II. About a minute and a half.
 genrule(
     name = "gcd_fir",
     outs = ["gcd/GCD.fir", "gcd/GCD.anno.json"],
@@ -53,13 +70,13 @@ genrule(
     name = "gcd_goldengate",
     srcs = ["gcd/GCD.fir", "gcd/GCD.anno.json"],
     outs = ["gg/FireSim-generated.sv", "gg/FireSim-generated.const.h"],
-    cmd = "$(location @firesim//:goldengate) " +
+    cmd = "$(location :release_goldengate) " +
           "-i $(location gcd/GCD.fir) -td $(RULEDIR)/gg " +
           "-faf $(location gcd/GCD.anno.json) " +
           "-ggcp firesim.midasexamples -ggcs DefaultNitefuryConfig " +
           "--output-filename-base FireSim-generated " +
           "--allow-unrecognized-annotations --no-dedup > $(RULEDIR)/gg.log 2>&1 " +
           "|| { tail -40 $(RULEDIR)/gg.log >&2; exit 1; }",
-    tools = ["@firesim//:goldengate"],
+    tools = [":release_goldengate"],
     tags = ["manual"],
 )

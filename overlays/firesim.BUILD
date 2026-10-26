@@ -44,6 +44,7 @@ chisel3_library(
 scala_binary(
     name = "goldengate",
     main_class = "midas.stage.GoldenGateMain",
+    jvm_flags = ["-Xss8M"],
     deps = [":midas"],
     runtime_deps = [":firesim_examples"],
     visibility = ["//visibility:public"],
@@ -70,6 +71,7 @@ chisel3_library(
 scala_binary(
     name = "examples_generator",
     main_class = "midas.chiselstage.Generator",
+    jvm_flags = ["-Xss8M"],
     deps = [":firesim_examples"],
     visibility = ["//visibility:public"],
 )
