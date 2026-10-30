@@ -1,12 +1,13 @@
 module(
     name = "bazel_firesim_goldengate",
-    version = "1.22.0",
+    version = "1.22.0.1",
 )
 
 bazel_dep(name = "rules_scala", version = "7.4.0")
 bazel_dep(name = "rules_jvm_external", version = "6.7")
 bazel_dep(name = "rules_java", version = "8.14.0")
 bazel_dep(name = "rules_pkg", version = "1.0.1")
+bazel_dep(name = "rules_python", version = "0.40.0")
 
 
 # Golden Gate's own world, as FireSim's sim/build.sbt has it: Chisel 3.6.1.
