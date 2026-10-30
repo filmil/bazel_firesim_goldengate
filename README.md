@@ -27,6 +27,8 @@ compiler, library and reflect artifacts are overridden in `MODULE.bazel`.
 `examples/NitefuryExamplesConfig.scala` adds a Nitefury II config for
 FireSim's example targets, which FireSim doesn't ship; the smoke run uses it.
 
-The jar is reproducible on one machine. Its source locators hold the build
-machine's paths for Golden Gate's own code; rules_firesim rewrites those in
-its output.
+The jar holds no path of the build machine: two builds in different output bases give the same bytes.
+Chisel 3.6 records each source locator as the source file's canonical path minus the working directory of the JVM that compiles it.
+Bazel's external repositories resolve outside that directory, under the output base or the repository contents cache.
+The `relocated_jar` rule in `tools/defs.bzl` rewrites those locators in the deploy jar's class files to their path inside their repository (`sim/midas/src/main/scala/...`), the form Chisel's own jars have.
+`//tools:locators_test` checks that no class file of the released jar holds a Bazel path.

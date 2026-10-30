@@ -2,6 +2,7 @@ load("@rules_java//java:defs.bzl", "java_binary", "java_import")
 
 load("@rules_pkg//pkg:mappings.bzl", "pkg_files")
 load("@rules_pkg//pkg:zip.bzl", "pkg_zip")
+load("//tools:defs.bzl", "relocated_jar")
 
 # Golden Gate as a scala_binary; its `_deploy.jar` is the self-contained jar
 # the release ships.
@@ -12,11 +13,16 @@ alias(
 
 # The release: a module in itself (firesim_goldengate) holding the jar, which
 # the registry entry points at.
-genrule(
+#
+# Its jar is the deploy jar, with its Chisel source locators made
+# repo-relative (`sim/midas/...`): the jar then holds no path of the build
+# machine, and two builds in different output bases give the same bytes.
+relocated_jar(
     name = "release_jar",
-    srcs = ["@firesim//:goldengate_deploy.jar"],
-    outs = ["goldengate-1.22.0.jar"],
-    cmd = "cp $< $@",
+    binary = "@firesim//:goldengate",
+    jar = "@firesim//:goldengate_deploy.jar",
+    out = "goldengate-1.22.0.jar",
+    visibility = ["//tools:__pkg__"],
 )
 
 pkg_files(
