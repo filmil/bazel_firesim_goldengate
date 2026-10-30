@@ -2,3 +2,4 @@ bazel-*
 MODULE.bazel.lock
 build.log
 .bazelrc.user
+__pycache__/
