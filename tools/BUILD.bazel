@@ -1,0 +1,18 @@
+load("@rules_python//python:defs.bzl", "py_binary", "py_test")
+
+py_binary(
+    name = "relocate_locators",
+    srcs = ["relocate_locators.py"],
+    visibility = ["//visibility:public"],
+)
+
+py_test(
+    name = "locators_test",
+    size = "small",
+    srcs = ["locators_test.py"],
+    args = [
+        "$(rootpath //:release_jar)",
+        "sim/midas/src/main/scala/midas/widgets/Lib.scala",
+    ],
+    data = ["//:release_jar"],
+)
