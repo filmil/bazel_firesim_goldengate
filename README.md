@@ -28,7 +28,7 @@ compiler, library and reflect artifacts are overridden in `MODULE.bazel`.
 FireSim's example targets, which FireSim doesn't ship; the smoke run uses it.
 
 The jar holds no path of the build machine: two builds in different output bases give the same bytes.
-Chisel 3.6 records each source locator as the source file's canonical path minus the working directory of the JVM that compiles it.
-Bazel's external repositories resolve outside that directory, under the output base or the repository contents cache.
+Chisel 3.6 records each source locator as the source file's canonical path minus the `chisel.project.root` system property, or else minus the working directory of the JVM that compiles it.
+This build does not set the property, and Bazel's external repositories resolve outside that directory, under the output base or the repository contents cache.
 The `relocated_jar` rule in `tools/defs.bzl` rewrites those locators in the deploy jar's class files to their path inside their repository (`sim/midas/src/main/scala/...`), the form Chisel's own jars have.
 `//tools:locators_test` checks that no class file of the released jar holds a Bazel path.

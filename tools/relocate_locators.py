@@ -24,8 +24,10 @@ import struct
 import sys
 import zlib
 
-# Strings that show a build machine's Bazel tree in a locator.
+# Strings that show a build machine's Bazel tree in a locator; the
+# locators_test checks for the same ones.
 _MACHINE_MARKERS = (b"external/", b"execroot/", b"bazel-out/", b"/sandbox/",
+                    b"bazel/output", b".cache/bazel",
                     b"cache/repos/v1/contents/")
 
 
@@ -72,34 +74,48 @@ _CP_SIZES = {3: 4, 4: 4, 5: 8, 6: 8, 7: 2, 8: 2, 9: 4, 10: 4, 11: 4, 12: 4,
 
 
 def rewrite_class(data, suffixes):
-    """Returns (new class bytes or None if unchanged, list of UTF8 values)."""
+    """Returns (new class bytes or None if unchanged, list of UTF8 values).
+
+    Only UTF8 entries that a String constant refers to are rewritten: a
+    locator is a string literal, `SourceLine(<path>, <line>, <column>)`.
+    """
     if data[:4] != b"\xca\xfe\xba\xbe":
         raise ValueError("not a class file")
     count = struct.unpack_from(">H", data, 8)[0]
-    out = [data[:10]]
-    values = []
-    changed = False
+    entries = {}  # index: (tag, raw entry bytes, or the value of a UTF8)
+    strings = set()
     pos = 10
     index = 1
     while index < count:
         tag = data[pos]
         if tag == 1:
             length = struct.unpack_from(">H", data, pos + 1)[0]
-            value = data[pos + 3:pos + 3 + length]
-            new = relocate(value, suffixes)
-            if new is not None and new != value:
-                changed = True
-                value = new
-            values.append(value)
-            out.append(b"\x01" + struct.pack(">H", len(value)) + value)
+            entries[index] = (tag, data[pos + 3:pos + 3 + length])
             pos += 3 + length
         else:
             size = _CP_SIZES[tag]
-            out.append(data[pos:pos + 1 + size])
+            entries[index] = (tag, data[pos:pos + 1 + size])
+            if tag == 8:
+                strings.add(struct.unpack_from(">H", data, pos + 1)[0])
             pos += 1 + size
             if tag in (5, 6):
                 index += 1  # Long and Double take two slots.
         index += 1
+    out = [data[:10]]
+    values = []
+    changed = False
+    for index, (tag, raw) in entries.items():
+        if tag != 1:
+            out.append(raw)
+            continue
+        value = raw
+        if index in strings:
+            new = relocate(value, suffixes)
+            if new is not None and new != value:
+                changed = True
+                value = new
+        values.append(value)
+        out.append(b"\x01" + struct.pack(">H", len(value)) + value)
     out.append(data[pos:])
     return (b"".join(out) if changed else None), values
 
@@ -163,6 +179,9 @@ def relocate_jar(jar, suffixes):
                 raise ValueError("unsupported compression in %r" % name)
             new_body, values = rewrite_class(body, suffixes)
             if new_body is not None:
+                if lextra or extra_len:
+                    # Zip64 or alignment data would no longer fit the entry.
+                    raise ValueError("extra fields in %r" % name)
                 rewritten += 1
                 # A rewritten class is stored, not deflated: its bytes then
                 # depend on no zlib build.
