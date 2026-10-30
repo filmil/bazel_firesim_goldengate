@@ -41,7 +41,7 @@ pkg_files(
 pkg_zip(
     name = "release",
     srcs = [":release_files"],
-    out = "firesim_goldengate-1.22.0.zip",
+    out = "firesim_goldengate-1.22.0.1.zip",
 )
 
 # The released jar, run as consumers run it: the smoke run below uses this,

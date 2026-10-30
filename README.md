@@ -12,7 +12,7 @@ the consumer runs the jar as a tool instead, through
 [rules_firesim](https://github.com/filmil/bazel_rules_firesim).
 
     bazel build //:goldengate          # the jar's scala_binary
-    bazel build //:release             # firesim_goldengate-1.22.0.zip
+    bazel build //:release             # firesim_goldengate-1.22.0.1.zip
     bazel build //:gcd_goldengate      # a smoke run: FireSim's GCD example on Nitefury II
 
 The release zip is itself the module `firesim_goldengate`: `MODULE.bazel`, a

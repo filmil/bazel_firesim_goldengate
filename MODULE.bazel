@@ -1,6 +1,6 @@
 module(
     name = "bazel_firesim_goldengate",
-    version = "1.22.0",
+    version = "1.22.0.1",
 )
 
 bazel_dep(name = "rules_scala", version = "7.4.0")
